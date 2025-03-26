@@ -1,13 +1,13 @@
+import os
 import mysql.connector
 
-# Database Configuration
+# Use environment variables for database configuration
 db_config = {
-    "host": "localhost",
-    "user": "root",    # Replace with your MySQL username
-    "password": "admin", # Replace with your MySQL password
-    "database": "email_assistant"   # Replace with your MySQL database name
+    "host": os.environ.get("DB_HOST", "localhost"),
+    "user": os.environ.get("DB_USER", "root"),
+    "password": os.environ.get("DB_PASSWORD", ""),
+    "database": os.environ.get("DB_NAME", "email_assistant")
 }
 
-# Create a connection function
 def get_db_connection():
     return mysql.connector.connect(**db_config)
