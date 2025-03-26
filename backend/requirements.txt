@@ -1,0 +1,11 @@
+flask
+flask-cors
+flask-jwt-extended
+mysql-connector-python
+pymysql
+python-dotenv
+google-generativeai
+pdfplumber
+python-docx
+werkzeug
+smtplib
