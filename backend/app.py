@@ -10,7 +10,8 @@ from flask import Flask, jsonify
 
 app = Flask(__name__)
 app.config.from_object(Config)
-CORS(app, resources={r"/*": {"origins": "*"}})
+from flask_cors import CORS
+CORS(app, supports_credentials=True)  # Allow credentials (important for JWTs)
 jwt = JWTManager(app) 
 
 # Register Blueprints (routes)
