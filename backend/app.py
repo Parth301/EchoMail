@@ -20,6 +20,13 @@ app.register_blueprint(email_bp, url_prefix="/email")  # Email-related routes
 app.register_blueprint(analytics_bp, url_prefix="/analytics")  # Analytics routes
 app.register_blueprint(admin_bp, url_prefix="/admin")
 
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "https://echo-mail-ten.vercel.app"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
+    return response
+
 @app.route("/")
 def home():
     return jsonify({"message": "Welcome to the Email Assistant API!"})
