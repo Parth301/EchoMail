@@ -11,7 +11,7 @@ from flask import Flask, jsonify
 app = Flask(__name__)
 app.config.from_object(Config)
 from flask_cors import CORS
-CORS(app, supports_credentials=True)  # Allow credentials (important for JWTs)
+CORS(app, resources={r"/*": {"origins": "https://echo-mail-ten.vercel.app"}}, supports_credentials=True)  # Allow credentials (important for JWTs)
 jwt = JWTManager(app) 
 
 # Register Blueprints (routes)
