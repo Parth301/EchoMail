@@ -11,6 +11,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask_cors import cross_origin
 from werkzeug.utils import secure_filename
+from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
+from email import encoders
+import mimetypes
 
 email_bp = Blueprint("email", __name__)
 
@@ -57,7 +61,7 @@ def extract_text_from_file(file_path):
         print(f"Error extracting text from {file_path}: {e}")
     return ""
 
-def generate_advanced_prompt(base_prompt, tone='professional', length='medium', language='english'):
+def generate_advanced_prompt(base_prompt, tone='professional', length='medium', language='English'):
     """
     Generate an enhanced prompt with advanced settings
     """
@@ -75,10 +79,10 @@ def generate_advanced_prompt(base_prompt, tone='professional', length='medium', 
     }
 
     language_mapping = {
-        'english': "Write the email in standard American English.",
-        'marathi': "Write the email in standard marathi.",
-        'hindi': "Write the email in standard hindi.",
-        'sanskrit': "Write the email in standard sanskrit."
+        'English': "Write the email in standard American English.",
+        'Spanish': "Write the email in standard spanish.",
+        'German': "Write the email in standard german.",
+        'French': "Write the email in standard french."
     }
 
     # Construct advanced prompt
@@ -91,14 +95,14 @@ def generate_advanced_prompt(base_prompt, tone='professional', length='medium', 
 
     Length Specification: {length_mapping.get(length, length_mapping['medium'])}
 
-    Language: {language_mapping.get(language, language_mapping['english'])}
+    Language: {language_mapping.get(language, language_mapping['English'])}
 
     Please generate an email that adheres to these specific guidelines.
     """
 
     return advanced_prompt
 
-def refine_advanced_text(text, tone='professional', length='medium', language='english'):
+def refine_advanced_text(text, tone='professional', length='medium', language='English'):
     """
     Refine text with advanced settings
     """
@@ -116,10 +120,10 @@ def refine_advanced_text(text, tone='professional', length='medium', language='e
     }
 
     language_mapping = {
-        'english': "Ensure the text follows standard American English grammar and style.",
-        'marathi': "Adapt the text to standard marathi language conventions.",
-        'hindi': "Modify the text to align with standard hindi language guidelines.",
-        'sanskrit': "Revise the text to conform to standard sanskrit language rules."
+        'English': "Ensure the text follows standard American English grammar and style.",
+        'Spanish': "Adapt the text to standard spanish language conventions.",
+        'German': "Modify the text to align with standard german language guidelines.",
+        'French': "Revise the text to conform to standard french language rules."
     }
 
     # Construct advanced refinement prompt
@@ -132,7 +136,7 @@ def refine_advanced_text(text, tone='professional', length='medium', language='e
     Refinement Guidelines:
     1. Tone: {tone_mapping.get(tone, tone_mapping['professional'])}
     2. Length Adjustment: {length_mapping.get(length, length_mapping['medium'])}
-    3. Language Styling: {language_mapping.get(language, language_mapping['english'])}
+    3. Language Styling: {language_mapping.get(language, language_mapping['English'])}
 
     Important Instructions:
     - ONLY return the refined text
@@ -156,7 +160,7 @@ def generate():
     prompt = data.get("prompt", "")
     tone = data.get("tone", "professional")
     length = data.get("length", "medium")
-    language = data.get("language", "english")
+    language = data.get("language", "English")
 
     if not prompt:
         return jsonify({"error": "Missing prompt"}), 400
@@ -196,7 +200,7 @@ def refine_email():
     # Extract advanced settings
     tone = request.form.get("tone", "professional")
     length = request.form.get("length", "medium")
-    language = request.form.get("language", "english")
+    language = request.form.get("language", "English")
 
     if "file" not in request.files and "text" not in request.form:
         return jsonify({"error": "No file or text provided"}), 400
@@ -259,33 +263,55 @@ def refine_email():
 @jwt_required()
 @cross_origin()
 def send_email():
-    data = request.get_json()
     user_id = get_jwt_identity()["id"]
-
-    if not data or "recipient" not in data or "subject" not in data or "email_content" not in data:
+    
+    # Handle form data instead of JSON for file uploads
+    recipient = request.form.get("recipient")
+    subject = request.form.get("subject")
+    email_content = request.form.get("email_content")
+    
+    if not recipient or not subject or not email_content:
         return jsonify({"error": "Missing recipient, subject, or email content"}), 400
 
     # Prepare email
     msg = MIMEMultipart()
     msg["From"] = EMAIL_ADDRESS
-    msg["To"] = data["recipient"]
-    msg["Subject"] = data["subject"]
-    msg.attach(MIMEText(data["email_content"], "plain"))
+    msg["To"] = recipient
+    msg["Subject"] = subject
+    msg.attach(MIMEText(email_content, "plain"))
+    
+    # Handle attachments
+    if 'attachments' in request.files:
+        files = request.files.getlist('attachments')
+        
+        for file in files:
+            if file.filename:
+                # Get file mime type
+                mimetype, _ = mimetypes.guess_type(file.filename)
+                if mimetype is None:
+                    mimetype = 'application/octet-stream'
+                
+                maintype, subtype = mimetype.split('/', 1)
+                
+                # Create the attachment
+                attachment = MIMEBase(maintype, subtype)
+                attachment.set_payload(file.read())
+                encoders.encode_base64(attachment)
+                attachment.add_header('Content-Disposition', 'attachment', 
+                                     filename=file.filename)
+                msg.attach(attachment)
 
     try:
         # Initialize SMTP server
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-        server.sendmail(EMAIL_ADDRESS, data["recipient"], msg.as_string())
+        server.sendmail(EMAIL_ADDRESS, recipient, msg.as_string())
         server.quit()
 
         # Log the email action
-        EmailLog(user_id=user_id, email_content=data["email_content"], action="sent")
+        EmailLog(user_id=user_id, email_content=email_content, action="sent")
 
         return jsonify({"message": "Email sent successfully!"}), 200
-
-    except smtplib.SMTPException as e:
-        return jsonify({"error": f"SMTP error: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
