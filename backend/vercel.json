@@ -1,13 +1,4 @@
 {
-  "builds": [
-    {
-      "src": "backend/wsgi.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "50mb"
-      }
-    }
-  ],
   "functions": {
     "api/**.py": {
       "runtime": "python3.11"
