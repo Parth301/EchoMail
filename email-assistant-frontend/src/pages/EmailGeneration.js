@@ -23,7 +23,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  MenuItem
+  MenuItem,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Chip
 } from "@mui/material";
 import { 
   Send as SendIcon, 
@@ -35,7 +40,9 @@ import {
   Preview as PreviewIcon,
   Settings as SettingsIcon,
   Help as HelpIcon,
-  Dashboard as DashboardIcon
+  Dashboard as DashboardIcon,
+  AttachFile as AttachmentIcon,
+  Delete as DeleteIcon
 } from "@mui/icons-material";
 
 const EmailAssistant = () => {
@@ -54,6 +61,7 @@ const EmailAssistant = () => {
   const [file, setFile] = useState(null);
   const [recipient, setRecipient] = useState("");
   const [subject, setSubject] = useState("");
+  const [attachments, setAttachments] = useState([]);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -71,11 +79,12 @@ const EmailAssistant = () => {
   const [advancedSettings, setAdvancedSettings] = useState({
     tone: "professional",
     length: "medium",
-    language: "english"
+    language: "English"
   });
 
   // Refs
   const fileInputRef = useRef(null);
+  const attachmentInputRef = useRef(null);
 
   // Memoized Snackbar Function
   const showSnackbar = useCallback((message, severity = "success") => {
@@ -91,8 +100,12 @@ const EmailAssistant = () => {
     setFile(null);
     setRecipient("");
     setSubject("");
+    setAttachments([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+    if (attachmentInputRef.current) {
+      attachmentInputRef.current.value = "";
     }
   }, []);
 
@@ -194,7 +207,25 @@ const EmailAssistant = () => {
     }
   };
 
-  // Email Sending Handler
+  // Handle attachment files
+  const handleAttachmentChange = (e) => {
+    const files = Array.from(e.target.files);
+    setAttachments(prev => [...prev, ...files]);
+  };
+
+  // Remove attachment
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Format file size
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / 1048576).toFixed(1) + ' MB';
+  };
+
+  // Email Sending Handler with attachments
   const sendEmail = async () => {
     const emailBody = tab === 0 ? generatedEmail : refinedEmail;
 
@@ -205,14 +236,26 @@ const EmailAssistant = () => {
 
     setSending(true);
     try {
+      // Create FormData for sending files
+      const formData = new FormData();
+      formData.append("recipient", recipient);
+      formData.append("subject", subject);
+      formData.append("email_content", emailBody);
+      
+      // Add attachments
+      attachments.forEach(file => {
+        formData.append("attachments", file);
+      });
+
       const response = await axios.post(
         "/email/send",
-        {
-          recipient,
-          subject,
-          email_content: emailBody,
-        },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        formData,
+        { 
+          headers: { 
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "multipart/form-data"
+          } 
+        }
       );
 
       showSnackbar(response.data.message || "Email sent successfully!");
@@ -367,6 +410,26 @@ const EmailAssistant = () => {
         >
           {tab === 0 ? generatedEmail : refinedEmail}
         </Typography>
+        
+        {attachments.length > 0 && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+              Attachments ({attachments.length})
+            </Typography>
+            <Paper variant="outlined" sx={{ p: 1, borderRadius: 2 }}>
+              {attachments.map((file, index) => (
+                <Chip
+                  key={index}
+                  label={`${file.name} (${formatFileSize(file.size)})`}
+                  size="small"
+                  variant="outlined"
+                  sx={{ m: 0.5 }}
+                  icon={<AttachmentIcon fontSize="small" />}
+                />
+              ))}
+            </Paper>
+          </Box>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={() => setPreviewOpen(false)} color="primary">
@@ -431,9 +494,9 @@ const EmailAssistant = () => {
               language: e.target.value
             }))}
           >
-            {['english', 'marathi', 'hindi', 'sanskrit'].map((option) => (
+            {['English', 'Spanish', 'German', 'French'].map((option) => (
               <MenuItem key={option} value={option}>
-                {option.charAt(0).toUpperCase() + option.slice(1)}
+                {option}
               </MenuItem>
             ))}
           </TextField>
@@ -467,7 +530,10 @@ const EmailAssistant = () => {
           2. Refine Tab: Upload a document or paste text to improve and polish your email.
         </Typography>
         <Typography variant="body2" paragraph>
-          3. Use the preview, copy, and settings buttons to customize your email.
+          3. Add attachments using the attachment button below the email content.
+        </Typography>
+        <Typography variant="body2" paragraph>
+          4. Use the preview, copy, and settings buttons to customize your email.
         </Typography>
         <Typography variant="body2" color="text.secondary">
           Pro Tip: Adjust tone, length, and language settings for personalized emails!
@@ -720,6 +786,60 @@ const EmailAssistant = () => {
                 sx: { borderRadius: 2 }
               }}
             />
+
+            {/* File Attachments Section */}
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Attachments
+              </Typography>
+              
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+                <Button
+                  variant="outlined"
+                  component="label"
+                  startIcon={<AttachmentIcon />}
+                  sx={{ borderRadius: 2 }}
+                >
+                  Add Attachments
+                  <input
+                    type="file"
+                    hidden
+                    ref={attachmentInputRef}
+                    onChange={handleAttachmentChange}
+                    multiple
+                  />
+                </Button>
+              </Box>
+                            
+              {attachments.length > 0 && (
+                <List dense sx={{ 
+                  bgcolor: 'background.paper', 
+                  borderRadius: 2,
+                  mb: 2,
+                  border: '1px solid',
+                  borderColor: 'divider'
+                }}>
+                  {attachments.map((file, index) => (
+                    <ListItem key={index}>
+                      <ListItemText
+                        primary={file.name}
+                        secondary={formatFileSize(file.size)}
+                      />
+                      <ListItemSecondaryAction>
+                        <IconButton 
+                          edge="end" 
+                          onClick={() => removeAttachment(index)}
+                          size="small"
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+            </Box>
 
             <Button 
               variant="contained" 
