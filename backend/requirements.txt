@@ -1,4 +1,5 @@
-google-generative-ai==0.1.0   # Correct package name for Google Generative AI
+google-ai-generativelanguage==0.6.15
+google-generativeai==0.8.4
 backend==0.2.4.1
 Flask==2.2.3
 Flask_Cors==3.0.10
