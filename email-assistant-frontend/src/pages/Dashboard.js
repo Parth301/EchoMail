@@ -83,41 +83,43 @@ const Dashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
-      const token = localStorage.getItem("token");
+  const fetchAnalytics = async () => {
+    const token = localStorage.getItem("token");
 
-      if (!token) {
-        console.error("❌ No token found. User not authenticated.");
-        navigate("/login");
-        return;
-      }
+    if (!token) {
+      console.error("❌ No token found. User not authenticated.");
+      navigate("/login");
+      return;
+    }
 
-      try {
-  setIsLoading(true);
-  const response = await api.get("/analytics/api/analytics");
-  const data = response.data;
+    try {
+      setIsLoading(true);
+      const response = await api.get("/analytics/api/analytics");
+      const data = response.data;
 
-  console.log("Fetched Analytics:", data); // Debug log
+      console.log("Fetched Analytics:", data); // Debug log
 
-  const processedData = {
-    total_emails: Number(data.total_emails) || 0,
-    generated_count: Number(data.generated_count) || 0,
-    refined_count: Number(data.refined_count) || 0,
-    sent_count: Number(data.sent_count) || 0
+      const processedData = {
+        total_emails: Number(data.total_emails) || 0,
+        generated_count: Number(data.generated_count) || 0,
+        refined_count: Number(data.refined_count) || 0,
+        sent_count: Number(data.sent_count) || 0
+      };
+
+      setAnalytics(processedData);
+      setError(null);
+    } catch (error) {
+      console.error("❌ Error fetching analytics:", error);
+      setError(error.message || "An unexpected error occurred.");
+      handleLogout();
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  setAnalytics(processedData);
-  setError(null);
-} catch (error) {
-  console.error("❌ Error fetching analytics:", error);
-  setError(error.message || "An unexpected error occurred.");
-  handleLogout();
-} finally {
-  setIsLoading(false);
-}
+  fetchAnalytics(); // ✅ This is now inside useEffect properly
+}, [navigate, handleLogout]);
 
-    fetchAnalytics();
-  }, [navigate, handleLogout]);
 
   const barChartData = [
     { name: "Total Actions", count: analytics.total_emails },
