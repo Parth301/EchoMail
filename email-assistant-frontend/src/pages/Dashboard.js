@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import api from 'axios';
 import { 
   Container, 
   Typography, 
@@ -93,13 +94,8 @@ const Dashboard = () => {
 
       try {
         setIsLoading(true);
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/analytics/api/analytics`, {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
-        });
+        const response = await api.get("/analytics/api/analytics");
+        const data = response.data;
 
         if (!response.ok) {
           throw new Error("Failed to fetch analytics. Unauthorized or expired token.");
