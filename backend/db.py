@@ -3,10 +3,10 @@ import pymysql
 
 def get_db_connection():
     return pymysql.connect(
-        host=os.environ["sql12.freesqldatabase.com"],
-        user=os.environ["sql12774147"],
-        password=os.environ["1GJN1Weipi"],
-        database=os.environ["sql12774147"],
+        host=os.environ["buvdpvm918jfonwzvibq-mysql.services.clever-cloud.com"],
+        user=os.environ["udmktifdo3wwwnth"],
+        password=os.environ["LpCIiJ9bFdx2eekWOI4K"],
+        database=os.environ["buvdpvm918jfonwzvibq"],
         port=int(os.environ.get("DB_PORT", 3306)),
         cursorclass=pymysql.cursors.DictCursor
     )
