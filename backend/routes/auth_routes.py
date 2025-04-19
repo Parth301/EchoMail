@@ -87,6 +87,7 @@ def login():
     """
     try:
         data = request.json
+        logger.info("Received login request with data: %s", data)  # Log incoming request data
 
         if not data:
             return jsonify({"error": "No input data provided"}), 400
@@ -94,10 +95,14 @@ def login():
         email = data.get("email", "").strip()
         password = data.get("password", "").strip()
 
+        logger.info("Email: %s, Password Length: %d", email, len(password))  # Log email and password length
+
         if not email or not password:
+            logger.warning("Missing email or password.")
             return jsonify({"error": "Email and password are required"}), 400
 
         if not validate_email(email):
+            logger.warning("Invalid email format: %s", email)
             return jsonify({"error": "Invalid email format"}), 400
 
         conn = get_db_connection()
@@ -111,8 +116,12 @@ def login():
             """, (email,))
             user = cursor.fetchone()
 
-            if not user or not check_password_hash(user['password'], password):
-                logger.warning(f"Failed login attempt for email: {email}")
+            if not user:
+                logger.warning("User not found or not active for email: %s", email)
+                return jsonify({"error": "Invalid credentials"}), 401
+
+            if not check_password_hash(user['password'], password):
+                logger.warning("Incorrect password for user: %s", email)
                 return jsonify({"error": "Invalid credentials"}), 401
 
             access_token = create_access_token(identity={
@@ -121,7 +130,7 @@ def login():
                 "is_admin": user['is_admin']
             })
 
-            logger.info(f"Successful login for user: {email}")
+            logger.info("Successfully logged in for user: %s", email)
             return jsonify({
                 "token": access_token,
                 "is_admin": user['is_admin'],
@@ -129,7 +138,7 @@ def login():
             }), 200
 
         except Exception as e:
-            logger.error(f"Login Error: {e}")
+            logger.error("Database Error during login: %s", e)
             return jsonify({"error": "Login failed. Please try again."}), 500
 
         finally:
@@ -137,5 +146,5 @@ def login():
             conn.close()
 
     except Exception as e:
-        logger.error(f"Unexpected error during login: {e}")
+        logger.error("Unexpected error during login: %s", e)
         return jsonify({"error": "An unexpected error occurred"}), 500
