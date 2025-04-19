@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from "react";
-import api from 'axios';
+import api from 'axios'; // Updated import to use the centralized API module
 import { useNavigate } from "react-router-dom";
 import { 
   Box, 
@@ -141,15 +141,15 @@ const EmailAssistant = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(
+      // Updated to use the centralized API
+      const response = await api.post(
         `/email/generate`,
         { 
           prompt,
           tone: advancedSettings.tone,
           length: advancedSettings.length,
           language: advancedSettings.language
-        },
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        }
       );
 
       if (!response.data || !response.data.email_content) {
@@ -187,10 +187,15 @@ const EmailAssistant = () => {
     formData.append("language", advancedSettings.language);
 
     try {
-      const response = await axios.post(
+      // Updated to use the centralized API - note that we don't need to set Authorization header here
+      const response = await api.post(
         "/email/refine",
         formData,
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        { 
+          headers: { 
+            "Content-Type": "multipart/form-data" // Set content type for FormData
+          } 
+        }
       );
 
       if (!response.data || !response.data.refined_email) {
@@ -247,12 +252,12 @@ const EmailAssistant = () => {
         formData.append("attachments", file);
       });
 
-      const response = await axios.post(
+      // Updated to use the centralized API - using correct content type
+      const response = await api.post(
         "/email/send",
         formData,
         { 
           headers: { 
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
             "Content-Type": "multipart/form-data"
           } 
         }
