@@ -107,7 +107,7 @@ const Login = () => {
   }, []);
 
   // Login handler
- const handleLogin = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -128,18 +128,12 @@ const Login = () => {
     }
   
     try {
-      console.log("Sending login request to the server...");
-      console.log("Email:", email); // Log email for debugging
-      console.log("Password length:", password.length); // Log password length (don't log the password itself)
-
       const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, {
         email, 
         password
       });
   
       // Successful login
-      console.log("Response from login API:", response); // Log the full response
-  
       if (response.data.token) {
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("is_admin", response.data.is_admin ? "true" : "false");
@@ -153,12 +147,6 @@ const Login = () => {
       }
     } catch (err) {
       console.error("Login error:", err);
-      if (err.response) {
-        console.error("Response error data:", err.response.data);
-        console.error("Response error status:", err.response.status);
-      } else {
-        console.error("Error without response:", err.message);
-      }
       setError(
         err.response?.data?.error || 
         "Network error. Please try again later."
