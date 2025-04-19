@@ -93,36 +93,28 @@ const Dashboard = () => {
       }
 
       try {
-        setIsLoading(true);
-        const response = await api.get("/analytics/api/analytics");
-        const data = response.data;
+  setIsLoading(true);
+  const response = await api.get("/analytics/api/analytics");
+  const data = response.data;
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch analytics. Unauthorized or expired token.");
-        }
+  console.log("Fetched Analytics:", data); // Debug log
 
-        const data = await response.json();
-        console.log("Fetched Analytics:", data); // Debug log
-        
-        // Convert string values to numbers
-        const processedData = {
-          total_emails: Number(data.total_emails) || 0,
-          generated_count: Number(data.generated_count) || 0,
-          refined_count: Number(data.refined_count) || 0,
-          sent_count: Number(data.sent_count) || 0
-        };
+  const processedData = {
+    total_emails: Number(data.total_emails) || 0,
+    generated_count: Number(data.generated_count) || 0,
+    refined_count: Number(data.refined_count) || 0,
+    sent_count: Number(data.sent_count) || 0
+  };
 
-        setAnalytics(processedData);
-        setError(null);
-      } catch (error) {
-        console.error("❌ Error fetching analytics:", error);
-        setError(error.message);
-        // Logout user on fetch failure
-        handleLogout();
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  setAnalytics(processedData);
+  setError(null);
+} catch (error) {
+  console.error("❌ Error fetching analytics:", error);
+  setError(error.message || "An unexpected error occurred.");
+  handleLogout();
+} finally {
+  setIsLoading(false);
+}
 
     fetchAnalytics();
   }, [navigate, handleLogout]);
