@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import api from './api/axios';
+import axios from 'axios';
 import { 
   Container, 
   Typography, 
