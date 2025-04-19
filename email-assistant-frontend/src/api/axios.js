@@ -9,7 +9,7 @@ const api = axios.create({
   },
 });
 
-// Add the token to each request if it exists
+// Automatically attach token to every request
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -20,5 +20,4 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
-
-export default axios;
+export default api; // ✅ This line fixed
