@@ -1,6 +1,6 @@
 google-generativeai==0.8.4
-protobuf>=4.21.0  # ✅ updated for compatibility with google-generativeai
-google-api-core[grpc]==2.18.0  # ✅ latest compatible version as of now
+google-api-core==2.18.0
+protobuf==4.25.3
 Flask==2.2.5
 Flask_Cors==3.0.10
 gunicorn==21.2.0
@@ -8,4 +8,4 @@ Flask_JWT_Extended==4.7.1
 pdfplumber==0.11.5
 python_docx==1.1.2
 Werkzeug==2.2.2
-mysql-connector-python==8.0.33
+pymysql==1.1.0
