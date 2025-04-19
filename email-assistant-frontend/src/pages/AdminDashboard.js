@@ -213,13 +213,7 @@ const AdminDashboard = () => {
 
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/admin/users`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
+        const response = await api.get("/admin/users");
         setUsers(response.data);
         setFilteredUsers(response.data);
         setLoading(false);
@@ -249,16 +243,7 @@ const AdminDashboard = () => {
   const fetchUserLogs = async (userId) => {
     const token = localStorage.getItem("token");
     try {
-      const logsResponse = await axios.get(
-        `${process.env.REACT_APP_API_URL}/admin/logs/${userId}`, 
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
+      const logsResponse = await api.get(`/admin/logs/${userId}`);
       setLogs(logsResponse.data);
       setSelectedUser(userId);
     } catch (err) {
