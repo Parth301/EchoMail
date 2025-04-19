@@ -2,7 +2,8 @@ import os
 import re
 import logging
 from flask import Blueprint, request, jsonify
-import mysql.connector
+import pymysql
+from pymysql.err import MySQLError
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from db import get_db_connection
@@ -28,44 +29,37 @@ def register():
     Enhanced user registration with robust validation and error handling
     """
     try:
-        # Parse request data
         data = request.json
-        
-        # Validate input data
+
         if not data:
             return jsonify({"error": "No input data provided"}), 400
-        
+
         email = data.get("email", "").strip()
         password = data.get("password", "").strip()
-        
-        # Comprehensive input validation
+
         if not email or not password:
             return jsonify({"error": "Email and password are required"}), 400
-        
+
         if not validate_email(email):
             return jsonify({"error": "Invalid email format"}), 400
-        
+
         if len(password) < 8:
             return jsonify({"error": "Password must be at least 8 characters long"}), 400
 
-        # Database connection
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
         try:
-            # Check if email already exists
             cursor.execute("SELECT id FROM user WHERE email = %s", (email,))
             existing_user = cursor.fetchone()
-            
+
             if existing_user:
                 return jsonify({"error": "Email already registered"}), 409
 
-            # Hash password securely
             hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
-            # Insert new user with default non-admin status
             cursor.execute(
-                "INSERT INTO user (email, password, is_admin, created_at, active) VALUES (%s, %s, %s, NOW(), %s)", 
+                "INSERT INTO user (email, password, is_admin, created_at, active) VALUES (%s, %s, %s, NOW(), %s)",
                 (email, hashed_password, False, True)
             )
             conn.commit()
@@ -73,7 +67,7 @@ def register():
             logger.info(f"User registered successfully: {email}")
             return jsonify({"message": "User registered successfully"}), 201
 
-        except mysql.connector.Error as err:
+        except MySQLError as err:
             conn.rollback()
             logger.error(f"Database Error during registration: {err}")
             return jsonify({"error": "Registration failed. Please try again."}), 500
@@ -92,29 +86,24 @@ def login():
     Enhanced login route with comprehensive validation and security
     """
     try:
-        # Parse request data
         data = request.json
-        
-        # Validate input data
+
         if not data:
             return jsonify({"error": "No input data provided"}), 400
-        
+
         email = data.get("email", "").strip()
         password = data.get("password", "").strip()
-        
-        # Validate inputs
+
         if not email or not password:
             return jsonify({"error": "Email and password are required"}), 400
-        
+
         if not validate_email(email):
             return jsonify({"error": "Invalid email format"}), 400
 
-        # Database connection
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
         try:
-            # Fetch user with comprehensive query
             cursor.execute("""
                 SELECT id, email, password, is_admin 
                 FROM user 
@@ -122,12 +111,10 @@ def login():
             """, (email,))
             user = cursor.fetchone()
 
-            # Comprehensive authentication checks
             if not user or not check_password_hash(user['password'], password):
                 logger.warning(f"Failed login attempt for email: {email}")
                 return jsonify({"error": "Invalid credentials"}), 401
 
-            # Create access token with comprehensive payload
             access_token = create_access_token(identity={
                 "id": user['id'],
                 "email": user['email'],
